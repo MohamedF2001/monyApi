@@ -1,8 +1,16 @@
 import Category from "../models/Category.js";
 
+const normalizeCategoryType = (type) => {
+  if (type === 0 || type === "0" || type === "income") return "income";
+  if (type === 1 || type === "1" || type === "expense") return "expense";
+  return type;
+};
+
 export const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find({ user: req.user._id }).sort({
+    const categories = await Category.find({
+      $or: [{ user: { $exists: false } }, { user: null }],
+    }).sort({
       createdAt: -1,
     });
 
@@ -19,7 +27,8 @@ export const getCategories = async (req, res) => {
 
 export const createCategory = async (req, res) => {
   try {
-    const { name, type, color } = req.body;
+    const { name, color, colorValue, iconCodePoint } = req.body;
+    const type = normalizeCategoryType(req.body.type);
 
     if (!name || !type) {
       return res.status(400).json({
@@ -30,7 +39,7 @@ export const createCategory = async (req, res) => {
 
     const existing = await Category.findOne({
       name: name.trim(),
-      user: req.user._id,
+      $or: [{ user: { $exists: false } }, { user: null }],
     });
 
     if (existing) {
@@ -44,7 +53,8 @@ export const createCategory = async (req, res) => {
       name,
       type,
       color: color || "#6366f1",
-      user: req.user._id,
+      colorValue,
+      iconCodePoint,
     });
 
     console.log(`📂 Catégorie créée : ${category.name}`);
@@ -63,11 +73,12 @@ export const createCategory = async (req, res) => {
 export const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, type, color } = req.body;
+    const { name, color, colorValue, iconCodePoint } = req.body;
+    const type = normalizeCategoryType(req.body.type);
 
     const category = await Category.findOne({
       _id: id,
-      user: req.user._id,
+      $or: [{ user: { $exists: false } }, { user: null }],
     });
 
     if (!category) {
@@ -80,8 +91,8 @@ export const updateCategory = async (req, res) => {
     if (name && name !== category.name) {
       const existing = await Category.findOne({
         name: name.trim(),
-        user: req.user._id,
         _id: { $ne: id },
+        $or: [{ user: { $exists: false } }, { user: null }],
       });
       if (existing) {
         return res.status(409).json({
@@ -95,6 +106,8 @@ export const updateCategory = async (req, res) => {
     if (name) updates.name = name;
     if (type) updates.type = type;
     if (color) updates.color = color;
+    if (colorValue !== undefined) updates.colorValue = colorValue;
+    if (iconCodePoint !== undefined) updates.iconCodePoint = iconCodePoint;
 
     const updated = await Category.findByIdAndUpdate(id, updates, {
       new: true,
@@ -120,7 +133,7 @@ export const deleteCategory = async (req, res) => {
 
     const category = await Category.findOne({
       _id: id,
-      user: req.user._id,
+      $or: [{ user: { $exists: false } }, { user: null }],
     });
 
     if (!category) {

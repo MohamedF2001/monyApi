@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import FinancialProfile from "../models/FinancialProfile.js";
 
 const generateToken = (userId, email) => {
   return jwt.sign({ userId, email }, process.env.JWT_SECRET, {
@@ -45,7 +46,7 @@ export const register = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Inscription réussie.",
-      data: { user, token },
+      data: { user, token, financialProfile: null },
     });
   } catch (error) {
     console.error("❌ Erreur register :", error.message);
@@ -81,13 +82,14 @@ export const login = async (req, res) => {
     }
 
     const token = generateToken(user._id, user.email);
+    const financialProfile = await FinancialProfile.findOne({ user: user._id });
 
     console.log(`🔐 Connexion : ${user.email}`);
 
     res.status(200).json({
       success: true,
       message: "Connexion réussie.",
-      data: { user, token },
+      data: { user, token, financialProfile },
     });
   } catch (error) {
     console.error("❌ Erreur login :", error.message);
@@ -97,9 +99,13 @@ export const login = async (req, res) => {
 
 export const getProfile = async (req, res) => {
   try {
+    const financialProfile = await FinancialProfile.findOne({
+      user: req.user._id,
+    });
+
     res.status(200).json({
       success: true,
-      data: { user: req.user },
+      data: { user: req.user, financialProfile },
     });
   } catch (error) {
     console.error("❌ Erreur getProfile :", error.message);
@@ -131,13 +137,16 @@ export const updateProfile = async (req, res) => {
       new: true,
       runValidators: true,
     }).select("-password");
+    const financialProfile = await FinancialProfile.findOne({
+      user: req.user._id,
+    });
 
     console.log(`✏️ Profil mis à jour : ${user.email}`);
 
     res.status(200).json({
       success: true,
       message: "Profil mis à jour avec succès.",
-      data: { user },
+      data: { user, financialProfile },
     });
   } catch (error) {
     console.error("❌ Erreur updateProfile :", error.message);

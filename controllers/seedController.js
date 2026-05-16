@@ -1,4 +1,5 @@
 import FinancialQuestion from "../models/FinancialQuestion.js";
+import { seedDefaultCategories as seedGlobalDefaultCategories } from "../services/defaultCategoryService.js";
 
 const questions = [
   {
@@ -32,6 +33,20 @@ export const seedQuestions = async (req, res) => {
     await FinancialQuestion.deleteMany({});
     await FinancialQuestion.insertMany(questions);
     res.status(200).json({ success: true, message: "Questions initialisées avec succès" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const seedDefaultCategories = async (req, res) => {
+  try {
+    const result = await seedGlobalDefaultCategories();
+
+    res.status(200).json({
+      success: true,
+      message: "Categories globales par defaut initialisees avec succes.",
+      data: result,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

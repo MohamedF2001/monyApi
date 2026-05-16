@@ -3,6 +3,7 @@ import {
   getQuestions,
   calculateAndSaveProfile,
   getMyProfile,
+  saveMyProfile,
 } from "../controllers/financialProfileController.js";
 import verifyToken from "../middlewares/auth.js";
 
@@ -11,6 +12,7 @@ const router = Router();
 router.use(verifyToken);
 
 router.get("/questions", getQuestions);
+router.post("/", saveMyProfile);
 router.post("/calculate", calculateAndSaveProfile);
 router.get("/", getMyProfile);
 

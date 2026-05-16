@@ -1,6 +1,12 @@
 import Transaction from "../models/Transaction.js";
-import Category from "../models/Category.js";
+import { findCategoryById } from "../services/defaultCategoryService.js";
 import mongoose from "mongoose";
+
+const normalizeTransactionType = (type) => {
+  if (type === 0 || type === "0" || type === "income") return "income";
+  if (type === 1 || type === "1" || type === "expense") return "expense";
+  return type;
+};
 
 export const getTransactions = async (req, res) => {
   try {
@@ -15,7 +21,7 @@ export const getTransactions = async (req, res) => {
 
     const filter = { user: req.user._id };
 
-    if (type) filter.type = type;
+    if (type) filter.type = normalizeTransactionType(type);
     if (category) filter.category = category;
     if (startDate || endDate) {
       filter.transactionDate = {};
@@ -27,7 +33,7 @@ export const getTransactions = async (req, res) => {
     const total = await Transaction.countDocuments(filter);
 
     const transactions = await Transaction.find(filter)
-      .populate("category", "name color")
+      .populate("category", "name color colorValue iconCodePoint isDefault defaultId")
       .sort({ transactionDate: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -48,8 +54,9 @@ export const getTransactions = async (req, res) => {
 
 export const createTransaction = async (req, res) => {
   try {
-    const { title, amount, type, category, description, transactionDate } =
+    const { title, amount, category, description, transactionDate } =
       req.body;
+    const type = normalizeTransactionType(req.body.type);
 
     if (!title || !amount || !type || !category) {
       return res.status(400).json({
@@ -58,15 +65,19 @@ export const createTransaction = async (req, res) => {
       });
     }
 
-    const cat = await Category.findOne({
-      _id: category,
-      user: req.user._id,
-    });
+    const cat = await findCategoryById(category);
 
     if (!cat) {
       return res.status(404).json({
         success: false,
         message: "Catégorie introuvable ou non autorisée.",
+      });
+    }
+
+    if (cat.type !== type) {
+      return res.status(400).json({
+        success: false,
+        message: "La categorie selectionnee ne correspond pas au type de transaction.",
       });
     }
 
@@ -80,7 +91,10 @@ export const createTransaction = async (req, res) => {
       user: req.user._id,
     });
 
-    const populated = await transaction.populate("category", "name color");
+    const populated = await transaction.populate(
+      "category",
+      "name color colorValue iconCodePoint isDefault defaultId"
+    );
 
     console.log(`💰 Transaction créée : ${title} - ${amount}`);
 
@@ -98,8 +112,9 @@ export const createTransaction = async (req, res) => {
 export const updateTransaction = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, amount, type, category, description, transactionDate } =
+    const { title, amount, category, description, transactionDate } =
       req.body;
+    const type = normalizeTransactionType(req.body.type);
 
     const transaction = await Transaction.findOne({
       _id: id,
@@ -114,14 +129,26 @@ export const updateTransaction = async (req, res) => {
     }
 
     if (category) {
-      const cat = await Category.findOne({
-        _id: category,
-        user: req.user._id,
-      });
+      const cat = await findCategoryById(category);
       if (!cat) {
         return res.status(404).json({
           success: false,
           message: "Catégorie introuvable ou non autorisée.",
+        });
+      }
+      if ((type || transaction.type) !== cat.type) {
+        return res.status(400).json({
+          success: false,
+          message: "La categorie selectionnee ne correspond pas au type de transaction.",
+        });
+      }
+    }
+    if (type && !category) {
+      const cat = await findCategoryById(transaction.category);
+      if (cat && cat.type !== type) {
+        return res.status(400).json({
+          success: false,
+          message: "La categorie selectionnee ne correspond pas au type de transaction.",
         });
       }
     }
@@ -137,7 +164,10 @@ export const updateTransaction = async (req, res) => {
     const updated = await Transaction.findByIdAndUpdate(id, updates, {
       new: true,
       runValidators: true,
-    }).populate("category", "name color");
+    }).populate(
+      "category",
+      "name color colorValue iconCodePoint isDefault defaultId"
+    );
 
     console.log(`✏️ Transaction mise à jour : ${updated.title}`);
 

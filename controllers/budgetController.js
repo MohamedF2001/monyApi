@@ -1,10 +1,12 @@
 import Budget from "../models/Budget.js";
-import Category from "../models/Category.js";
+import { findCategoryById } from "../services/defaultCategoryService.js";
+
+const categoryFields = "name type color colorValue iconCodePoint isDefault defaultId";
 
 export const getBudgets = async (req, res) => {
   try {
     const budgets = await Budget.find({ user: req.user._id })
-      .populate("category")
+      .populate("category", categoryFields)
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -13,7 +15,7 @@ export const getBudgets = async (req, res) => {
       data: { budgets },
     });
   } catch (error) {
-    console.error("❌ Erreur getBudgets :", error.message);
+    console.error("Erreur getBudgets :", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -22,19 +24,18 @@ export const createBudget = async (req, res) => {
   try {
     const { category, amount, period, startDate, endDate } = req.body;
 
-    if (!category || !amount) {
+    if (!category || amount === undefined) {
       return res.status(400).json({
         success: false,
-        message: "La catégorie et le montant sont obligatoires.",
+        message: "La categorie et le montant sont obligatoires.",
       });
     }
 
-    // Vérifier que la catégorie appartient bien à l'utilisateur
-    const categoryExists = await Category.findOne({ _id: category, user: req.user._id });
+    const categoryExists = await findCategoryById(category);
     if (!categoryExists) {
       return res.status(404).json({
         success: false,
-        message: "Catégorie introuvable ou non autorisée.",
+        message: "Categorie introuvable ou non autorisee.",
       });
     }
 
@@ -46,14 +47,15 @@ export const createBudget = async (req, res) => {
       endDate,
       user: req.user._id,
     });
+    const populated = await budget.populate("category", categoryFields);
 
     res.status(201).json({
       success: true,
-      message: "Budget créé avec succès.",
-      data: { budget },
+      message: "Budget cree avec succes.",
+      data: { budget: populated },
     });
   } catch (error) {
-    console.error("❌ Erreur createBudget :", error.message);
+    console.error("Erreur createBudget :", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -61,13 +63,31 @@ export const createBudget = async (req, res) => {
 export const updateBudget = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const { category, amount, period, startDate, endDate, isActive } = req.body;
+
+    if (category) {
+      const categoryExists = await findCategoryById(category);
+      if (!categoryExists) {
+        return res.status(404).json({
+          success: false,
+          message: "Categorie introuvable ou non autorisee.",
+        });
+      }
+    }
+
+    const updates = {};
+    if (category) updates.category = category;
+    if (amount !== undefined) updates.amount = amount;
+    if (period) updates.period = period;
+    if (startDate) updates.startDate = startDate;
+    if (endDate !== undefined) updates.endDate = endDate;
+    if (isActive !== undefined) updates.isActive = isActive;
 
     const budget = await Budget.findOneAndUpdate(
       { _id: id, user: req.user._id },
       updates,
       { new: true, runValidators: true }
-    ).populate("category");
+    ).populate("category", categoryFields);
 
     if (!budget) {
       return res.status(404).json({
@@ -78,11 +98,11 @@ export const updateBudget = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Budget mis à jour avec succès.",
+      message: "Budget mis a jour avec succes.",
       data: { budget },
     });
   } catch (error) {
-    console.error("❌ Erreur updateBudget :", error.message);
+    console.error("Erreur updateBudget :", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -102,10 +122,10 @@ export const deleteBudget = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Budget supprimé avec succès.",
+      message: "Budget supprime avec succes.",
     });
   } catch (error) {
-    console.error("❌ Erreur deleteBudget :", error.message);
+    console.error("Erreur deleteBudget :", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
