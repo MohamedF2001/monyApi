@@ -27,7 +27,7 @@ export const getTransactions = async (req, res) => {
     const total = await Transaction.countDocuments(filter);
 
     const transactions = await Transaction.find(filter)
-      .populate("category", "name icon color")
+      .populate("category", "name color")
       .sort({ transactionDate: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -80,7 +80,7 @@ export const createTransaction = async (req, res) => {
       user: req.user._id,
     });
 
-    const populated = await transaction.populate("category", "name icon color");
+    const populated = await transaction.populate("category", "name color");
 
     console.log(`💰 Transaction créée : ${title} - ${amount}`);
 
@@ -137,7 +137,7 @@ export const updateTransaction = async (req, res) => {
     const updated = await Transaction.findByIdAndUpdate(id, updates, {
       new: true,
       runValidators: true,
-    }).populate("category", "name icon color");
+    }).populate("category", "name color");
 
     console.log(`✏️ Transaction mise à jour : ${updated.title}`);
 
@@ -225,7 +225,6 @@ export const getStats = async (req, res) => {
         $project: {
           _id: 0,
           category: "$categoryInfo.name",
-          icon: "$categoryInfo.icon",
           color: "$categoryInfo.color",
           total: 1,
         },

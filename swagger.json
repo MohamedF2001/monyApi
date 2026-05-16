@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "Mony API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "API REST complète pour Mony, application intelligente de gestion financière personnelle.",
     "contact": {
       "name": "Mony Support",
@@ -23,7 +23,10 @@
     { "name": "Auth", "description": "Authentification et gestion du profil" },
     { "name": "Categories", "description": "Gestion des catégories" },
     { "name": "Transactions", "description": "Gestion des transactions financières" },
-    { "name": "AI", "description": "Assistant IA financier" }
+    { "name": "Budgets", "description": "Gestion des budgets par catégorie" },
+    { "name": "Financial Profile", "description": "Analyse du profil financier" },
+    { "name": "AI", "description": "Assistant IA financier" },
+    { "name": "Seed", "description": "Initialisation des données" }
   ],
   "components": {
     "securitySchemes": {
@@ -51,7 +54,7 @@
         "properties": {
           "_id": { "type": "string", "example": "664a1f2b3c4d5e6f7a8b9c01" },
           "name": { "type": "string", "example": "Alimentation" },
-          "icon": { "type": "string", "example": "🍔" },
+          "type": { "type": "string", "enum": ["income", "expense"], "example": "expense" },
           "color": { "type": "string", "example": "#f97316" },
           "user": { "type": "string", "example": "664a1f2b3c4d5e6f7a8b9c0d" },
           "createdAt": { "type": "string", "format": "date-time" }
@@ -69,6 +72,57 @@
           "transactionDate": { "type": "string", "format": "date-time" },
           "user": { "type": "string", "example": "664a1f2b3c4d5e6f7a8b9c0d" },
           "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Budget": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "example": "664a1f2b3c4d5e6f7a8b9c04" },
+          "category": { "$ref": "#/components/schemas/Category" },
+          "amount": { "type": "number", "example": 100000 },
+          "period": { "type": "string", "enum": ["monthly", "yearly"], "example": "monthly" },
+          "startDate": { "type": "string", "format": "date-time" },
+          "endDate": { "type": "string", "format": "date-time" },
+          "isActive": { "type": "boolean", "example": true }
+        }
+      },
+      "FinancialProfile": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "example": "664a1f2b3c4d5e6f7a8b9c05" },
+          "type": { "type": "string", "example": "balancedAware" },
+          "traitScores": {
+            "type": "object",
+            "properties": {
+              "impulsivity": { "type": "number" },
+              "discipline": { "type": "number" },
+              "savingCapacity": { "type": "number" },
+              "emotionalControl": { "type": "number" },
+              "organizationLevel": { "type": "number" },
+              "riskTolerance": { "type": "number" }
+            }
+          },
+          "confidenceScore": { "type": "number", "example": 85.5 },
+          "aiFeedback": { "type": "string" }
+        }
+      },
+      "FinancialQuestion": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "order": { "type": "integer" },
+          "text": { "type": "string" },
+          "type": { "type": "string" },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "text": { "type": "string" }
+              }
+            }
+          }
         }
       },
       "ChatHistory": {
@@ -137,8 +191,8 @@
               }
             }
           },
-          "400": { "description": "Champs manquants", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "409": { "description": "Email ou username déjà utilisé", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "400": { "description": "Champs manquants" },
+          "409": { "description": "Email ou username déjà utilisé" }
         }
       }
     },
@@ -163,7 +217,7 @@
         },
         "responses": {
           "200": { "description": "Connexion réussie", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
-          "401": { "description": "Identifiants incorrects", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "401": { "description": "Identifiants incorrects" }
         }
       }
     },
@@ -187,30 +241,6 @@
               }
             }
           },
-          "401": { "description": "Non authentifié", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      },
-      "put": {
-        "tags": ["Auth"],
-        "summary": "Modifier le profil",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "firstName": { "type": "string" },
-                  "lastName": { "type": "string" },
-                  "username": { "type": "string" },
-                  "avatar": { "type": "string" }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": { "description": "Profil mis à jour" },
           "401": { "description": "Non authentifié" }
         }
       }
@@ -229,7 +259,6 @@
                   "type": "object",
                   "properties": {
                     "success": { "type": "boolean" },
-                    "count": { "type": "integer" },
                     "data": { "type": "object", "properties": { "categories": { "type": "array", "items": { "$ref": "#/components/schemas/Category" } } } }
                   }
                 }
@@ -248,10 +277,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["name"],
+                "required": ["name", "type"],
                 "properties": {
                   "name": { "type": "string", "example": "Alimentation" },
-                  "icon": { "type": "string", "example": "🍔" },
+                  "type": { "type": "string", "enum": ["income", "expense"], "example": "expense" },
                   "color": { "type": "string", "example": "#f97316" }
                 }
               }
@@ -259,60 +288,15 @@
           }
         },
         "responses": {
-          "201": { "description": "Catégorie créée" },
-          "409": { "description": "Nom déjà utilisé" }
-        }
-      }
-    },
-    "/api/categories/{id}": {
-      "put": {
-        "tags": ["Categories"],
-        "summary": "Modifier une catégorie",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": { "type": "string" },
-                  "icon": { "type": "string" },
-                  "color": { "type": "string" }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": { "description": "Catégorie mise à jour" },
-          "404": { "description": "Catégorie introuvable" }
-        }
-      },
-      "delete": {
-        "tags": ["Categories"],
-        "summary": "Supprimer une catégorie",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
-        "responses": {
-          "200": { "description": "Catégorie supprimée" },
-          "404": { "description": "Catégorie introuvable" }
+          "201": { "description": "Catégorie créée" }
         }
       }
     },
     "/api/transactions": {
       "get": {
         "tags": ["Transactions"],
-        "summary": "Lister les transactions avec filtres et pagination",
+        "summary": "Lister les transactions",
         "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "in": "query", "name": "type", "schema": { "type": "string", "enum": ["income", "expense"] } },
-          { "in": "query", "name": "category", "schema": { "type": "string" }, "description": "ID de la catégorie" },
-          { "in": "query", "name": "startDate", "schema": { "type": "string", "format": "date" } },
-          { "in": "query", "name": "endDate", "schema": { "type": "string", "format": "date" } },
-          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
-          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 10 } }
-        ],
         "responses": {
           "200": {
             "description": "Liste des transactions",
@@ -322,10 +306,6 @@
                   "type": "object",
                   "properties": {
                     "success": { "type": "boolean" },
-                    "count": { "type": "integer" },
-                    "total": { "type": "integer" },
-                    "page": { "type": "integer" },
-                    "totalPages": { "type": "integer" },
                     "data": { "type": "object", "properties": { "transactions": { "type": "array", "items": { "$ref": "#/components/schemas/Transaction" } } } }
                   }
                 }
@@ -346,57 +326,83 @@
                 "type": "object",
                 "required": ["title", "amount", "type", "category"],
                 "properties": {
-                  "title": { "type": "string", "example": "Courses supermarché" },
-                  "amount": { "type": "number", "example": 45000 },
-                  "type": { "type": "string", "enum": ["income", "expense"], "example": "expense" },
-                  "category": { "type": "string", "example": "664a1f2b3c4d5e6f7a8b9c01" },
-                  "description": { "type": "string", "example": "Courses hebdomadaires" },
-                  "transactionDate": { "type": "string", "format": "date-time" }
+                  "title": { "type": "string" },
+                  "amount": { "type": "number" },
+                  "type": { "type": "string", "enum": ["income", "expense"] },
+                  "category": { "type": "string" }
                 }
               }
             }
           }
         },
         "responses": {
-          "201": { "description": "Transaction créée" },
-          "400": { "description": "Champs manquants" }
+          "201": { "description": "Transaction créée" }
         }
       }
     },
-    "/api/transactions/stats": {
+    "/api/budgets": {
       "get": {
-        "tags": ["Transactions"],
-        "summary": "Statistiques financières de l'utilisateur",
+        "tags": ["Budgets"],
+        "summary": "Lister les budgets",
         "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "Statistiques calculées",
+            "description": "Liste des budgets",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "success": { "type": "boolean" },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "totalIncome": { "type": "number", "example": 500000 },
-                        "totalExpense": { "type": "number", "example": 250000 },
-                        "balance": { "type": "number", "example": 250000 },
-                        "expenseByCategory": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "category": { "type": "string", "example": "Alimentation" },
-                              "icon": { "type": "string", "example": "🍔" },
-                              "color": { "type": "string", "example": "#f97316" },
-                              "total": { "type": "number", "example": 120000 }
-                            }
-                          }
-                        }
-                      }
-                    }
+                    "data": { "type": "object", "properties": { "budgets": { "type": "array", "items": { "$ref": "#/components/schemas/Budget" } } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Budgets"],
+        "summary": "Créer un budget",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["category", "amount"],
+                "properties": {
+                  "category": { "type": "string", "description": "ID de la catégorie" },
+                  "amount": { "type": "number" },
+                  "period": { "type": "string", "enum": ["monthly", "yearly"] },
+                  "startDate": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Budget créé" }
+        }
+      }
+    },
+    "/api/financial-profile": {
+      "get": {
+        "tags": ["Financial Profile"],
+        "summary": "Obtenir mon profil financier",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Profil financier",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "object", "properties": { "profile": { "$ref": "#/components/schemas/FinancialProfile" } } }
                   }
                 }
               }
@@ -405,42 +411,59 @@
         }
       }
     },
-    "/api/transactions/{id}": {
-      "put": {
-        "tags": ["Transactions"],
-        "summary": "Modifier une transaction",
+    "/api/financial-profile/questions": {
+      "get": {
+        "tags": ["Financial Profile"],
+        "summary": "Obtenir les questions du profil financier",
         "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Liste des questions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "object", "properties": { "questions": { "type": "array", "items": { "$ref": "#/components/schemas/FinancialQuestion" } } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/financial-profile/calculate": {
+      "post": {
+        "tags": ["Financial Profile"],
+        "summary": "Calculer et sauvegarder le profil à partir des réponses",
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "title": { "type": "string" },
-                  "amount": { "type": "number" },
-                  "type": { "type": "string", "enum": ["income", "expense"] },
-                  "category": { "type": "string" },
-                  "description": { "type": "string" },
-                  "transactionDate": { "type": "string", "format": "date-time" }
+                  "answers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "questionId": { "type": "string" },
+                        "selectedChoiceId": { "type": "string" },
+                        "freeText": { "type": "string" }
+                      }
+                    }
+                  }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Transaction mise à jour" },
-          "404": { "description": "Transaction introuvable" }
-        }
-      },
-      "delete": {
-        "tags": ["Transactions"],
-        "summary": "Supprimer une transaction",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }],
-        "responses": {
-          "200": { "description": "Transaction supprimée" },
-          "404": { "description": "Transaction introuvable" }
+          "200": { "description": "Profil calculé" }
         }
       }
     },
@@ -457,35 +480,14 @@
                 "type": "object",
                 "required": ["message"],
                 "properties": {
-                  "message": { "type": "string", "example": "Comment économiser plus chaque mois ?" }
+                  "message": { "type": "string" }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Réponse de l'IA",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean" },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "question": { "type": "string" },
-                        "answer": { "type": "string" }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "description": "Message vide" },
-          "500": { "description": "Erreur IA" }
+          "200": { "description": "Réponse de l'IA" }
         }
       }
     },
@@ -494,27 +496,41 @@
         "tags": ["AI"],
         "summary": "Historique des conversations IA",
         "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "in": "query", "name": "page", "schema": { "type": "integer", "default": 1 } },
-          { "in": "query", "name": "limit", "schema": { "type": "integer", "default": 20 } }
-        ],
+        "responses": {
+          "200": { "description": "Historique des chats" }
+        }
+      }
+    },
+    "/api/ai/analyze": {
+      "get": {
+        "tags": ["AI"],
+        "summary": "Analyse personnalisée des transactions par l'IA",
+        "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "Historique des chats",
+            "description": "Analyse générée",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "success": { "type": "boolean" },
-                    "count": { "type": "integer" },
-                    "total": { "type": "integer" },
-                    "data": { "type": "object", "properties": { "history": { "type": "array", "items": { "$ref": "#/components/schemas/ChatHistory" } } } }
+                    "data": { "type": "object", "properties": { "analysis": { "type": "string" } } }
                   }
                 }
               }
             }
           }
+        }
+      }
+    },
+    "/api/seed/questions": {
+      "post": {
+        "tags": ["Seed"],
+        "summary": "Initialiser les questions du profil financier",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Questions initialisées" }
         }
       }
     }

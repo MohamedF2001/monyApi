@@ -19,12 +19,12 @@ export const getCategories = async (req, res) => {
 
 export const createCategory = async (req, res) => {
   try {
-    const { name, icon, color } = req.body;
+    const { name, type, color } = req.body;
 
-    if (!name) {
+    if (!name || !type) {
       return res.status(400).json({
         success: false,
-        message: "Le nom de la catégorie est obligatoire.",
+        message: "Le nom et le type de la catégorie sont obligatoires.",
       });
     }
 
@@ -42,7 +42,7 @@ export const createCategory = async (req, res) => {
 
     const category = await Category.create({
       name,
-      icon: icon || "📁",
+      type,
       color: color || "#6366f1",
       user: req.user._id,
     });
@@ -63,7 +63,7 @@ export const createCategory = async (req, res) => {
 export const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, icon, color } = req.body;
+    const { name, type, color } = req.body;
 
     const category = await Category.findOne({
       _id: id,
@@ -93,7 +93,7 @@ export const updateCategory = async (req, res) => {
 
     const updates = {};
     if (name) updates.name = name;
-    if (icon) updates.icon = icon;
+    if (type) updates.type = type;
     if (color) updates.color = color;
 
     const updated = await Category.findByIdAndUpdate(id, updates, {

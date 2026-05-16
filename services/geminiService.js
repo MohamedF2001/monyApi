@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
-const SYSTEM_PROMPT = `Tu es Mony Assistant, un conseiller expert en finances personnelles. 
+const SYSTEM_PROMPT = `Tu es Mony Assistant, un conseiller expert en finances personnelles.
 Tu aides les utilisateurs à mieux gérer leur budget, épargner, réduire leurs dépenses et atteindre leurs objectifs financiers.
 
 Règles strictes :
@@ -19,5 +19,22 @@ export const askFinancialQuestion = async (message) => {
   });
 
   const result = await model.generateContent(message);
+  return result.response.text().trim();
+};
+
+export const analyzeTransactions = async (transactions, userProfile) => {
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    systemInstruction: SYSTEM_PROMPT + "\nOn va te fournir une liste de transactions et le profil financier de l'utilisateur pour une analyse personnalisée.",
+  });
+
+  const prompt = `Voici mes transactions récentes :
+${JSON.stringify(transactions, null, 2)}
+
+Mon profil financier est : ${userProfile ? userProfile.type : "Non défini"}
+
+Analyse mes habitudes de dépenses, identifie des anomalies ou des opportunités d'économie, et donne-moi 3 conseils concrets adaptés à ma situation actuelle.`;
+
+  const result = await model.generateContent(prompt);
   return result.response.text().trim();
 };

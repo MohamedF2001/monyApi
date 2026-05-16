@@ -7,9 +7,10 @@ const categorySchema = new mongoose.Schema(
       required: [true, "Le nom de la catégorie est obligatoire"],
       trim: true,
     },
-    icon: {
+    type: {
       type: String,
-      default: "📁",
+      enum: ["income", "expense"],
+      required: [true, "Le type de catégorie est obligatoire"],
     },
     color: {
       type: String,

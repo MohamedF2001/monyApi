@@ -1,5 +1,7 @@
-import { askFinancialQuestion } from "../services/openaiService.js";
+import { askFinancialQuestion, analyzeTransactions } from "../services/geminiService.js";
 import ChatHistory from "../models/ChatHistory.js";
+import Transaction from "../models/Transaction.js";
+import FinancialProfile from "../models/FinancialProfile.js";
 
 export const chat = async (req, res) => {
   try {
@@ -59,6 +61,27 @@ export const getChatHistory = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Erreur getChatHistory :", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getAIAnalysis = async (req, res) => {
+  try {
+    const transactions = await Transaction.find({ user: req.user._id })
+      .sort({ transactionDate: -1 })
+      .limit(50)
+      .populate("category");
+
+    const profile = await FinancialProfile.findOne({ user: req.user._id });
+
+    const analysis = await analyzeTransactions(transactions, profile);
+
+    res.status(200).json({
+      success: true,
+      data: { analysis },
+    });
+  } catch (error) {
+    console.error("❌ Erreur analyse IA :", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
