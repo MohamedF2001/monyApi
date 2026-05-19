@@ -54,14 +54,13 @@ export const getTransactions = async (req, res) => {
 
 export const createTransaction = async (req, res) => {
   try {
-    const { title, amount, category, description, transactionDate } =
-      req.body;
+    const { amount, category, description, transactionDate } = req.body;
     const type = normalizeTransactionType(req.body.type);
 
-    if (!title || !amount || !type || !category) {
+    if (!amount || !type || !category) {
       return res.status(400).json({
         success: false,
-        message: "Titre, montant, type et catégorie sont obligatoires.",
+        message: "Montant, type et catégorie sont obligatoires.",
       });
     }
 
@@ -82,7 +81,6 @@ export const createTransaction = async (req, res) => {
     }
 
     const transaction = await Transaction.create({
-      title,
       amount,
       type,
       category,
@@ -96,7 +94,7 @@ export const createTransaction = async (req, res) => {
       "name color colorValue iconCodePoint isDefault defaultId"
     );
 
-    console.log(`💰 Transaction créée : ${title} - ${amount}`);
+    console.log(`💰 Transaction créée : ${amount}`);
 
     res.status(201).json({
       success: true,
@@ -112,8 +110,7 @@ export const createTransaction = async (req, res) => {
 export const updateTransaction = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, amount, category, description, transactionDate } =
-      req.body;
+    const { amount, category, description, transactionDate } = req.body;
     const type = normalizeTransactionType(req.body.type);
 
     const transaction = await Transaction.findOne({
@@ -154,7 +151,6 @@ export const updateTransaction = async (req, res) => {
     }
 
     const updates = {};
-    if (title) updates.title = title;
     if (amount) updates.amount = amount;
     if (type) updates.type = type;
     if (category) updates.category = category;
@@ -169,7 +165,7 @@ export const updateTransaction = async (req, res) => {
       "name color colorValue iconCodePoint isDefault defaultId"
     );
 
-    console.log(`✏️ Transaction mise à jour : ${updated.title}`);
+    console.log(`✏️ Transaction mise à jour : ${updated.amount}`);
 
     res.status(200).json({
       success: true,
@@ -200,7 +196,7 @@ export const deleteTransaction = async (req, res) => {
 
     await Transaction.findByIdAndDelete(id);
 
-    console.log(`🗑️ Transaction supprimée : ${transaction.title}`);
+    console.log(`🗑️ Transaction supprimée : ${transaction.amount}`);
 
     res.status(200).json({
       success: true,

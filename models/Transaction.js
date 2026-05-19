@@ -2,11 +2,6 @@ import mongoose from "mongoose";
 
 const transactionSchema = new mongoose.Schema(
   {
-    title: {
-      type: String,
-      required: [true, "Le titre est obligatoire"],
-      trim: true,
-    },
     amount: {
       type: Number,
       required: [true, "Le montant est obligatoire"],
@@ -20,15 +15,15 @@ const transactionSchema = new mongoose.Schema(
       },
       required: [true, "Le type est obligatoire"],
     },
-    category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
-      required: [true, "La catégorie est obligatoire"],
-    },
     description: {
       type: String,
       trim: true,
       default: "",
+    },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      required: [true, "La catégorie est obligatoire"],
     },
     transactionDate: {
       type: Date,
@@ -41,7 +36,7 @@ const transactionSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 transactionSchema.index({ user: 1, transactionDate: -1 });
