@@ -62,7 +62,7 @@ export const calculateAndSaveProfile = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Profil financier enregistre avec succes.",
+      message: "Profil financier enregistré avec succès.",
       data: { profile },
     });
   } catch (error) {
@@ -98,7 +98,7 @@ export const saveMyProfile = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Profil financier enregistre avec succes.",
+      message: "Profil financier enregistré avec succès.",
       data: { profile },
     });
   } catch (error) {
@@ -109,10 +109,11 @@ export const saveMyProfile = async (req, res) => {
 export const getMyProfile = async (req, res) => {
   try {
     const profile = await FinancialProfile.findOne({ user: req.user._id });
-    if (!profile) {
-      return res.status(404).json({ success: false, message: "Profil non trouvé" });
-    }
-    res.status(200).json({ success: true, data: { profile } });
+    // Retourne 200 avec null si pas de profil au lieu de 404 pour éviter l'erreur dans Flutter
+    res.status(200).json({
+      success: true,
+      data: { profile: profile || null }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
