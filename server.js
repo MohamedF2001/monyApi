@@ -33,13 +33,17 @@ app.use("/api/ai", aiRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.get("/", (req, res) => {
+/* app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "🚀 Mony API opérationnelle",
     docs: "/api-docs",
   });
-});
+}); */
+
+app.get('/', (req, res) => {
+    res.send('Hello World 🚀 Mony API opérationnelle')
+})
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route introuvable." });
