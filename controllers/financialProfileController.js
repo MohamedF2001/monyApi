@@ -1,5 +1,6 @@
 import FinancialQuestion from "../models/FinancialQuestion.js";
 import FinancialProfile from "../models/FinancialProfile.js";
+import User from "../models/User.js";
 import {
   calculateTraitScores,
   determineProfileType,
@@ -16,7 +17,7 @@ const allowedProfileTypes = [
 ];
 
 const saveProfileForUser = async (userId, profileData) => {
-  return FinancialProfile.findOneAndUpdate(
+  const profile = await FinancialProfile.findOneAndUpdate(
     { user: userId },
     { ...profileData, user: userId },
     {
@@ -26,6 +27,15 @@ const saveProfileForUser = async (userId, profileData) => {
       setDefaultsOnInsert: true,
     }
   );
+
+  // Mettre à jour l'utilisateur avec la référence au profil financier
+  await User.findByIdAndUpdate(
+    userId,
+    { financialProfile: profile._id },
+    { new: true }
+  );
+
+  return profile;
 };
 
 export const getQuestions = async (req, res) => {
@@ -108,11 +118,62 @@ export const saveMyProfile = async (req, res) => {
 
 export const getMyProfile = async (req, res) => {
   try {
-    const profile = await FinancialProfile.findOne({ user: req.user._id });
-    // Retourne 200 avec null si pas de profil au lieu de 404 pour éviter l'erreur dans Flutter
+    // Récupérer le profil avec les données complètes
+    const profile = await FinancialProfile.findOne({ user: req.user._id })
+      .populate("user", "firstName lastName email avatar")
+      .populate("answers.questionId");
+
+    // Récupérer aussi l'utilisateur avec la référence au profil
+    const user = await User.findById(req.user._id)
+      .select("firstName lastName email avatar financialProfile")
+      .populate("financialProfile");
+
     res.status(200).json({
       success: true,
-      data: { profile: profile || null }
+      data: { 
+        profile: profile || null,
+        user
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getProfileWithDetails = async (req, res) => {
+  try {
+    // Récupérer le profil financier complet avec toutes les réponses et questions
+    const profile = await FinancialProfile.findOne({ user: req.user._id })
+      .populate("user", "firstName lastName email avatar")
+      .populate({
+        path: "answers.questionId",
+        model: "FinancialQuestion",
+      });
+
+    if (!profile) {
+      return res.status(200).json({
+        success: true,
+        message: "Aucun profil financier trouvé.",
+        data: { profile: null }
+      });
+    }
+
+    // Récupérer l'utilisateur
+    const user = await User.findById(req.user._id);
+
+    res.status(200).json({
+      success: true,
+      data: { 
+        profile,
+        user: {
+          id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          avatar: user.avatar,
+          financialProfile: user.financialProfile
+        }
+      }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -85,6 +85,12 @@
             "type": "string",
             "example": "https://cdn.example.com/avatar.png"
           },
+          "financialProfile": {
+            "type": "string",
+            "description": "ID du profil financier lié à cet utilisateur",
+            "example": "664a1f2b3c4d5e6f7a8b9c05",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -1374,7 +1380,8 @@
         "tags": [
           "Financial Profile"
         ],
-        "summary": "Obtenir mon profil financier",
+        "summary": "Obtenir mon profil financier avec les données utilisateur",
+        "description": "Récupère le profil financier de l'utilisateur connecté ainsi que ses informations personnelles avec le lien vers le profil",
         "security": [
           {
             "bearerAuth": []
@@ -1382,7 +1389,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Profil financier",
+            "description": "Profil financier avec données utilisateur",
             "content": {
               "application/json": {
                 "schema": {
@@ -1395,7 +1402,35 @@
                       "type": "object",
                       "properties": {
                         "profile": {
-                          "$ref": "#/components/schemas/FinancialProfile"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/FinancialProfile"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "user": {
+                                  "$ref": "#/components/schemas/User"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "user": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/User"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "financialProfile": {
+                                  "type": "string",
+                                  "description": "ID du profil financier"
+                                }
+                              }
+                            }
+                          ]
                         }
                       }
                     }
@@ -1490,7 +1525,7 @@
         },
         "responses": {
           "200": {
-            "description": "Profil financier enregistre",
+            "description": "Profil financier enregistre avec lien utilisateur",
             "content": {
               "application/json": {
                 "schema": {
@@ -1517,6 +1552,80 @@
           },
           "400": {
             "description": "Type ou scores invalides"
+          }
+        }
+      }
+    },
+    "/api/financial-profile/details": {
+      "get": {
+        "tags": [
+          "Financial Profile"
+        ],
+        "summary": "Obtenir le profil financier avec les questions détaillées",
+        "description": "Récupère le profil financier complet avec toutes les questions répondues (données peuplées)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profil financier avec questions complètes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "profile": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/FinancialProfile"
+                            },
+                            {
+                              "type": "object",
+                              "description": "Les answers contiennent les questions complètes peuplées",
+                              "properties": {
+                                "answers": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "questionId": {
+                                        "$ref": "#/components/schemas/FinancialQuestion"
+                                      },
+                                      "selectedChoiceId": {
+                                        "type": "string"
+                                      },
+                                      "freeText": {
+                                        "type": "string",
+                                        "nullable": true
+                                      },
+                                      "answeredAt": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1567,7 +1676,8 @@
         "tags": [
           "Financial Profile"
         ],
-        "summary": "Calculer et sauvegarder le profil à partir des réponses",
+        "summary": "Calculer et sauvegarder le profil à partir des 20 réponses",
+        "description": "Traite les 20 réponses aux questions, calcule les scores des traits, détermine le type de profil et l'enregistre. Crée automatiquement le lien avec l'utilisateur (financialProfile)",
         "security": [
           {
             "bearerAuth": []
@@ -1579,20 +1689,33 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "answers"
+                ],
                 "properties": {
                   "answers": {
                     "type": "array",
+                    "description": "Tableau des 20 réponses aux questions",
+                    "minItems": 20,
+                    "maxItems": 20,
                     "items": {
                       "type": "object",
+                      "required": [
+                        "questionId"
+                      ],
                       "properties": {
                         "questionId": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "ID de la question financière"
                         },
                         "selectedChoiceId": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "ID du choix sélectionné"
                         },
                         "freeText": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Réponse textuelle optionnelle",
+                          "nullable": true
                         }
                       }
                     }

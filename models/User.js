@@ -37,6 +37,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    financialProfile: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "FinancialProfile",
+      default: null,
+    },
   },
   { timestamps: true }
 );
