@@ -16,6 +16,6 @@ router.get("/questions", getQuestions);
 router.post("/calculate", calculateAndSaveProfile);
 router.post("/", saveMyProfile);
 router.get("/details", getProfileWithDetails);
-router.get("/", getMyProfile);
+router.get("/", verifyToken, getMyProfile);
 
 export default router;

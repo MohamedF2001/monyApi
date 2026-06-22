@@ -12,6 +12,10 @@ import budgetRoutes from "./routes/budgetRoutes.js";
 import financialProfileRoutes from "./routes/financialProfileRoutes.js";
 import seedRoutes from "./routes/seedRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import premiumRoutes from "./routes/premiumRoutes.js";
+import simulationRoutes from "./routes/simulationRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import pdfRoutes from "./routes/pdfRoutes.js";
 
 const require = createRequire(import.meta.url);
 const swaggerDocument = require("./swagger.json");
@@ -30,6 +34,10 @@ app.use("/api/budgets", budgetRoutes);
 app.use("/api/financial-profile", financialProfileRoutes);
 app.use("/api/seed", seedRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/premium", premiumRoutes);
+app.use("/api/simulations", simulationRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/pdfs", pdfRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 

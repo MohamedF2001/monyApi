@@ -42,8 +42,21 @@ const userSchema = new mongoose.Schema(
       ref: "FinancialProfile",
       default: null,
     },
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+    premiumUntil: {
+      type: Date,
+      default: null,
+    },
+    subscriptionType: {
+      type: String,
+      enum: ["none", "monthly", "yearly", "lifetime"],
+      default: "none",
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.pre("save", async function (next) {

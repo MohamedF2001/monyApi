@@ -23,6 +23,17 @@ const verifyToken = async (req, res, next) => {
       });
     }
 
+    if (
+      user.isPremium &&
+      user.premiumUntil &&
+      user.premiumUntil <= new Date()
+    ) {
+      user.isPremium = false;
+      user.subscriptionType = "none";
+      user.premiumUntil = null;
+      await user.save();
+    }
+
     req.user = user;
     next();
   } catch (error) {
