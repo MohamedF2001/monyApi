@@ -377,6 +377,12 @@ import axios from "axios";
 
 export const uploadPdf = async (req, res) => {
   try {
+    console.log("Configuration Cloudinary :", {
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY ? "✓" : "MANQUANT",
+      api_secret: process.env.CLOUDINARY_API_SECRET ? "✓" : "MANQUANT",
+    });
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
